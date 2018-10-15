@@ -23,7 +23,8 @@ func main() {
 	c := calculatorpb.NewCalculatorServiceClient(cc)
 
 	// doSum(c)
-	doPrimeNumberDecomposition(c)
+	// doPrimeNumberDecomposition(c)
+	doComputeAverage(c)
 }
 
 func doSum(c calculatorpb.CalculatorServiceClient) {
@@ -61,4 +62,41 @@ func doPrimeNumberDecomposition(c calculatorpb.CalculatorServiceClient) {
 
 		log.Printf("%v\t", factor.GetFactor())
 	}
+}
+
+func doComputeAverage(c calculatorpb.CalculatorServiceClient) {
+	fmt.Println("Starting streaming the numbers...")
+
+	requests := []*calculatorpb.ComputeAverageRequest{
+		&calculatorpb.ComputeAverageRequest{
+			Number: 1,
+		},
+		&calculatorpb.ComputeAverageRequest{
+			Number: 2,
+		},
+		&calculatorpb.ComputeAverageRequest{
+			Number: 3,
+		},
+		&calculatorpb.ComputeAverageRequest{
+			Number: 4,
+		},
+		&calculatorpb.ComputeAverageRequest{
+			Number: 5,
+		},
+	}
+
+	stream, err := c.ComputeAverage(context.Background())
+	if err != nil {
+		log.Fatalf("Error while calling ComputeAverage: %v", err)
+	}
+
+	for _, req := range requests {
+		stream.Send(req)
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Error while receiving response: %v", err)
+	}
+	log.Printf("The average from server is: %v", res.GetAverage())
 }
