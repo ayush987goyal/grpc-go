@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 
 	"google.golang.org/grpc"
@@ -67,6 +68,38 @@ func (*server) ComputeAverage(stream calculatorpb.CalculatorService_ComputeAvera
 		Average: average,
 	})
 
+}
+
+func (*server) FindMaximum(stream calculatorpb.CalculatorService_FindMaximumServer) error {
+	fmt.Printf("FindMaximum invoked with  streaming request")
+
+	currMax := int32(math.MinInt32)
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Error while reading client stream: %v", err)
+			return err
+		}
+
+		currMax = max(currMax, req.GetNumber())
+		sendErr := stream.Send(&calculatorpb.FindMaximumResponse{
+			Number: currMax,
+		})
+		if sendErr != nil {
+			log.Fatalf("Error while sending data to client: %v", sendErr)
+			return sendErr
+		}
+	}
+}
+
+func max(a, b int32) int32 {
+	if a >= b {
+		return a
+	}
+	return b
 }
 
 func main() {

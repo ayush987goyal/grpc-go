@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"github.com/ayush987goyal/grpc-go/calculator/calculatorpb"
 	"google.golang.org/grpc"
@@ -24,7 +25,8 @@ func main() {
 
 	// doSum(c)
 	// doPrimeNumberDecomposition(c)
-	doComputeAverage(c)
+	// doComputeAverage(c)
+	doFindMaximum(c)
 }
 
 func doSum(c calculatorpb.CalculatorServiceClient) {
@@ -99,4 +101,46 @@ func doComputeAverage(c calculatorpb.CalculatorServiceClient) {
 		log.Fatalf("Error while receiving response: %v", err)
 	}
 	log.Printf("The average from server is: %v", res.GetAverage())
+}
+
+func doFindMaximum(c calculatorpb.CalculatorServiceClient) {
+	fmt.Println("Starting streaming the numbers for max...")
+
+	nums := []int32{10, 4, 11, 13, 5, 7}
+
+	stream, err := c.FindMaximum(context.Background())
+	if err != nil {
+		log.Fatalf("Erro while calling FindMax: %v", err)
+		return
+	}
+
+	waitc := make(chan struct{})
+
+	go func() {
+		for _, num := range nums {
+			fmt.Printf("Sending number to server: %v\n", num)
+			stream.Send(&calculatorpb.FindMaximumRequest{
+				Number: num,
+			})
+			time.Sleep(time.Second)
+		}
+		stream.CloseSend()
+	}()
+
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatalf("Error while reading stream from server: %v", err)
+				break
+			}
+			fmt.Printf("The max till now from server is: %v\n", res.GetNumber())
+		}
+		close(waitc)
+	}()
+
+	<-waitc
 }
