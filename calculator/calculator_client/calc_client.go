@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/ayush987goyal/grpc-go/calculator/calculatorpb"
@@ -21,7 +22,8 @@ func main() {
 
 	c := calculatorpb.NewCalculatorServiceClient(cc)
 
-	doSum(c)
+	// doSum(c)
+	doPrimeNumberDecomposition(c)
 }
 
 func doSum(c calculatorpb.CalculatorServiceClient) {
@@ -35,4 +37,28 @@ func doSum(c calculatorpb.CalculatorServiceClient) {
 		log.Fatalf("Error while calling Sum RPC: %v", err)
 	}
 	log.Printf("Response from Sum: %v", res.GetSum())
+}
+
+func doPrimeNumberDecomposition(c calculatorpb.CalculatorServiceClient) {
+	req := &calculatorpb.PrimeNumberDecompositionRequest{
+		Number: 120,
+	}
+
+	resStream, err := c.PrimeNumberDecomposition(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Error while calling PrimeNumberDecomposition RPC: %v", err)
+	}
+
+	log.Printf("The factors for %v are: ", 120)
+	for {
+		factor, err := resStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Error while reading stream: %v", err)
+		}
+
+		log.Printf("%v\t", factor.GetFactor())
+	}
 }
