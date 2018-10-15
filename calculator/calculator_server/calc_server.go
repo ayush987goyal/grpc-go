@@ -84,22 +84,17 @@ func (*server) FindMaximum(stream calculatorpb.CalculatorService_FindMaximumServ
 			return err
 		}
 
-		currMax = max(currMax, req.GetNumber())
-		sendErr := stream.Send(&calculatorpb.FindMaximumResponse{
-			Number: currMax,
-		})
-		if sendErr != nil {
-			log.Fatalf("Error while sending data to client: %v", sendErr)
-			return sendErr
+		if req.GetNumber() > currMax {
+			currMax = req.GetNumber()
+			sendErr := stream.Send(&calculatorpb.FindMaximumResponse{
+				Number: currMax,
+			})
+			if sendErr != nil {
+				log.Fatalf("Error while sending data to client: %v", sendErr)
+				return sendErr
+			}
 		}
 	}
-}
-
-func max(a, b int32) int32 {
-	if a >= b {
-		return a
-	}
-	return b
 }
 
 func main() {
